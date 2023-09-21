@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@notum-cz/strapi-plugin-content-versioning": "^0.4.7",
+    "node-red-contrib-twitch-chat": "^1.1.1",
+    "streamlabs-obs-socket-client": "^1.0.2",
+    "streamlabs-ws-client": "^1.0.0",
+    "vue-i18n": "^8.22.1"
+  },
+  "devDependencies": {
+    "vue-cli-plugin-i18n": "~1.0.1"
+  }
+}
