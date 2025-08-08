@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@notum-cz/strapi-plugin-content-versioning": "^0.4.7",
+    "crypto-js": "^4.2.0",
     "node-red-contrib-twitch-chat": "^1.1.1",
     "streamlabs-obs-socket-client": "^1.0.2",
     "streamlabs-ws-client": "^1.0.0",

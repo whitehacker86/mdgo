@@ -1,0 +1,58 @@
+version : 0
+uid : 577805004
+ladderinfo : 145
+attrid : 590000
+heroCount: 3 heroid : 2 4 7
+nskillCount: 3 skillCount: 4 4 4
+skill : 6310227
+skill : 6310021
+skill : 6310023
+skill : 6310025
+skill : 6310256
+skill : 6310044
+skill : 6310236
+skill : 6310045
+skill : 6310082
+skill : 6310085
+skill : 6310245
+skill : 6310262
+cardId : 1301052 num: 1 look: 1
+cardId : 1301053 num: 1 look: 1
+cardId : 1301058 num: 1 look: 1
+cardId : 1301062 num: 1 look: 1
+cardId : 1301063 num: 1 look: 0
+cardId : 1301067 num: 4 look: 1
+cardId : 1301103 num: 4 look: 1
+cardId : 1301104 num: 4 look: 0
+cardId : 1301106 num: 4 look: 1
+cardId : 1301107 num: 4 look: 0
+cardId : 1301108 num: 4 look: 1
+cardId : 1301113 num: 1 look: 1
+cardId : 1301215 num: 1 look: 1
+cardId : 1301335 num: 4 look: 0
+cardId : 1301341 num: 1 look: 0
+cardId : 1301351 num: 1 look: 1
+cardId : 1501034 num: 2 look: 0
+cardId : 1501037 num: 4 look: 0
+cardId : 1501073 num: 1 look: 0
+cardId : 2301011 num: 1 look: 1
+cardId : 2301033 num: 1 look: 0
+cardId : 2301034 num: 2 look: 1
+cardId : 2301092 num: 4 look: 0
+cardId : 2301093 num: 4 look: 1
+cardId : 2301095 num: 4 look: 1
+cardId : 2301116 num: 1 look: 1
+cardId : 2301131 num: 4 look: 1
+cardId : 2301166 num: 2 look: 1
+cardId : 3301006 num: 1 look: 0
+cardId : 3301008 num: 1 look: 1
+cardId : 3301077 num: 4 look: 1
+cardId : 3301087 num: 2 look: 0
+cardId : 4301004 num: 1 look: 1
+cardId : 4301007 num: 1 look: 0
+cardId : 4301008 num: 1 look: 0
+cardId : 4301016 num: 4 look: 0
+cardId : 4301027 num: 4 look: 1
+cardId : 4301042 num: 2 look: 1
+cardId : 4301064 num: 3 look: 1
+cardId : 4301082 num: 4 look: 1
