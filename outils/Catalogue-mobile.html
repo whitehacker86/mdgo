@@ -17,6 +17,7 @@
 <div class="filters">
 <div class="field" id="categoryField"><label for="category">Catégorie</label><select id="category"><option value="">Toutes les catégories</option value="monster">Unités</option><option value="magic">Sorts</option><option value="equipment">Équipements</option><option value="trap">Pièges</option></select></div>
 <div class="field" id="heroField"><label for="hero">Héros associé</label><select id="hero"><option value="">Tous les héros</option value="-1">Neutre</option><option value="unknown">Non identifié</option></select></div>
+<div class="field" id="starsField"><label for="stars">Niveau personnage</label><select id="stars"><option value="">Tous les niveaux</option><option value="1">1 étoile</option><option value="2">2 étoiles</option><option value="4">4 étoiles</option><option value="8">8 étoiles</option><option value="ungrouped">Hors famille de 4</option></select></div>
 <div class="field"><label for="language">Nom affiché</label><select id="language"><option value="en">Anglais</option></select></div>
 <div class="field"><label for="sort">Trier par</label><select id="sort"><option value="name">Nom</option><option value="id">Identifiant croissant</option><option value="cost">Coût croissant</option></select></div>
 <label class="check" id="availableField"><input type="checkbox" id="available">Disponible dans cet APK</label>
@@ -57,12 +58,15 @@ function groupRows(rows){
  if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);}
  return [...groups.values()].map(variants=>{variants.sort((a,b)=>a.id-b.id);const rep=variants.find(v=>v.available_in_apk)||variants[0];return {...rep,_variants:variants,count:variants.reduce((n,v)=>n+(v.count||0),0)};});
 }
+function levelInfo(row){const id=String(row.id);if(row.category!=='monster'||!/^\d{2}[1-4]\d{3}$/.test(id))return null;const prefix=id.slice(0,2),suffix=id.slice(3);if(![1,2,3,4].every(d=>cardMap.get(Number(prefix+d+suffix))?.category==='monster'))return null;return {stars:({1:1,2:2,3:4,4:8})[id[2]],family:id.slice(0,2)+'*'+id.slice(3),baseId:Number(id.slice(0,2)+'1'+id.slice(3))};}
+function familyVariants(row){const info=levelInfo(row);if(!info)return [];const prefix=String(row.id).slice(0,2),suffix=String(row.id).slice(3);return [1,2,3,4].map(d=>cardMap.get(Number(prefix+d+suffix))).filter(v=>v&&v.category==='monster');}
 function variantsOf(row){return row._variants||[row];}
 function minCost(row){return Math.min(...variantsOf(row).map(v=>v.shop_cost??Infinity));}
 function apply(){
  const query=normalize($('search').value).trim().split(/\s+/).filter(Boolean);const cardsView=view==='cards'||view==='deck';const wantedHero=$('hero').value;
  if(cardsView&&!groupCache.has(view))groupCache.set(view,groupRows(baseRows()));const rows=cardsView?groupCache.get(view):baseRows();
  filtered=rows.filter(group=>variantsOf(group).some(r=>{
+  if(cardsView&&$('stars').value){const level=levelInfo(r);if($('stars').value==='ungrouped'?level!==null:String(level?.stars)!==$('stars').value)return false;}
   if(cardsView&&$('category').value&&r.category!==$('category').value)return false;
   if(cardsView&&wantedHero&&(wantedHero==='unknown'?r.hero_id!=null:String(r.hero_id)!==wantedHero))return false;
   if(view==='cards'&&$('available').checked&&!r.available_in_apk)return false;
@@ -91,9 +95,9 @@ function render(){
  const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));$('pageInfo').textContent=`${page} / ${pages}`;$('prev').disabled=page<=1;$('next').disabled=page>=pages;
  $('export').disabled=!filtered.length;
 }
-function changeView(next){view=next;page=1;$('search').value='';$('category').value='';$('hero').value='';$('available').checked=false;
+function changeView(next){view=next;page=1;$('search').value='';$('category').value='';$('hero').value='';$('stars').value='';$('available').checked=false;
  document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));
- const cardsView=view==='cards'||view==='deck';$('categoryField').hidden=!cardsView;$('heroField').hidden=!cardsView;$('availableField').hidden=view!=='cards';
+ const cardsView=view==='cards'||view==='deck';$('categoryField').hidden=!cardsView;$('starsField').hidden=!cardsView;$('heroField').hidden=!cardsView;$('availableField').hidden=view!=='cards';
  $('sort').querySelector('[value=cost]').disabled=!cardsView;if(!cardsView&&$('sort').value==='cost')$('sort').value='name';
  $('viewNote').textContent=({cards:'Une vignette par nom anglais. Tous les identifiants restent listés ; la fiche permet de consulter les effets de chaque variante. Les filtres retiennent un groupe dès qu’une variante correspond.',heroes:'Ces 39 définitions incluent des variantes et des personnages de scénario ; elles ne sont pas toutes sélectionnables.',variants:'Présentations et ressources de héros : leurs identifiants sont distincts des identifiants utilisés dans les decks.',deck:'Deck décodé : 40 identifiants regroupés par nom anglais. Les quantités et apparences de chaque variante sont conservées. Cinq identifiants restent sans nom.'})[view];apply();
 }
@@ -105,19 +109,21 @@ function variantBody(row){
  const body=el('div');const dl=el('dl',undefined,'details');addDetail(dl,view==='variants'?'ID présentation':view==='heroes'?'ID héros':'ID carte',row.id);
  addDetail(dl,'Nom anglais',row.name_en);if('name_tc' in row)addDetail(dl,'Chinois traditionnel',row.name_tc);
  if(view==='cards'||view==='deck'){
-  addDetail(dl,'Catégorie',CATEGORY[row.category]);addDetail(dl,'Héros associé',heroName(row.hero_id));addDetail(dl,'Identifiant héros',row.hero_id);addDetail(dl,'Coût boutique',row.shop_cost);
+  addDetail(dl,'Catégorie',CATEGORY[row.category]);addDetail(dl,'Héros associé',heroName(row.hero_id));addDetail(dl,'Identifiant héros',row.hero_id);addDetail(dl,'Coût boutique',row.shop_cost);const level=levelInfo(row);if(level){addDetail(dl,'Niveau personnage',`${level.stars} étoile${level.stars>1?'s':''}`);addDetail(dl,'Famille d’identifiants',level.family);}else{addDetail(dl,'Famille d’identifiants','Hors groupement complet de 4');}
   addDetail(dl,'Disponible APK',row.available_in_apk==null?null:row.available_in_apk?'Oui':'Non');addDetail(dl,'Masqué APK',row.hidden_in_apk==null?null:row.hidden_in_apk?'Oui':'Non');
   if(view==='deck'){addDetail(dl,'Quantité',row.count);addDetail(dl,'Apparence brute',row.appearance);addDetail(dl,'Catalogue',row.catalog_match?'Correspondance trouvée':'Identifiant à associer');}
  }else{addDetail(dl,'Carte associée',row.card_id);addDetail(dl,'Ressource',row.resource_name);}
  addDetail(dl,'Source',row.source||'Ressources extraites de l’APK 1.0.125073');body.append(dl);
  const copy=el('button','Copier cet identifiant','secondary');copy.addEventListener('click',()=>copyText(String(row.id)));body.append(copy);
  if(view==='cards'||view==='deck'){
+  const family=familyVariants(row);
+  if(family.length){const compare=el('details');const summary=el('summary','Comparer les niveaux de cette famille');summary.className='sectiontitle';compare.append(summary);for(const v of family){const section=el('div',undefined,'reference');section.append(el('h3',`${levelInfo(v).stars} étoile${levelInfo(v).stars>1?'s':''} · ID ${v.id}`));const texts=[...new Set((v.effects||[]).flatMap(e=>e.parts.map(p=>p['text_'+$('language').value]||p.text_en||p.text_zh||p.text_tc)).filter(Boolean))];if(!texts.length)section.append(el('p','Effets non renseignés.'));for(const text of texts)section.append(el('p',plainEffect(text)));compare.append(section);}body.append(compare);}
   body.append(el('h3','Effets de cette variante','sectiontitle'));
   const parts=(row.effects||[]).flatMap(e=>e.parts.map(p=>({...p,skill_id:e.skill_id})));let shown=0;const seen=new Set();
   for(const part of parts){const lang=$('language').value;const text=part['text_'+lang]||part.text_en||part.text_zh||part.text_tc;if(!text||seen.has(text))continue;seen.add(text);shown++;
    const box=el('div',undefined,'effect');box.append(el('div',plainEffect(text)));box.append(el('div',`Compétence ${part.skill_id} · description ${part.id}`,'effectid'));body.append(box);}
   if(!shown)body.append(el('p','Aucun texte d’effet retrouvé pour cet identifiant.','notice'));
-  body.append(el('p','Textes issus de cet APK : les valeurs et formulations peuvent différer du jeu actuel. Les paramètres dynamiques sont conservés tels quels.','notice'));
+  body.append(el('p','Pour les personnages à six chiffres concernés, le troisième chiffre 1/2/3/4 correspond à 1/2/4/8 étoiles, selon la convention fournie par le joueur. Les entrées hors groupement peuvent correspondre à Pow, Encounter, un équipement ou un reliquat d’étude ; leur rôle reste à confirmer à partir des données. Ce niveau est distinct de l’apparence. Textes issus de cet APK : les valeurs et formulations peuvent différer du jeu actuel. Les paramètres dynamiques sont conservés tels quels.','notice'));
   if(row.reference){const ref=row.reference;const box=el('div',undefined,'reference');box.append(el('h3','Référence du développeur · card_id.xlsx'));const d=el('dl',undefined,'details');for(const [k,label] of [['name','Nom de référence'],['rarity','Rareté'],['battle_style','Style de combat'],['hero','Héros'],['cost','Coût'],['type','Type']])addDetail(d,label,ref[k]);box.append(d,el('p','Référence historique fournie par le joueur ; version non précisée. Les différences avec l’APK sont conservées.','notice'));body.append(box);}
  }
  return body;
@@ -126,7 +132,7 @@ function showDetails(row){
  const variants=variantsOf(row);
  if((view==='cards'||view==='deck')&&variants.length){
   const list=el('p',`Tous les identifiants : ${variants.map(v=>v.id).join(', ')}`,'variantids');const field=el('div',undefined,'variantselect');const label=el('label','Variante à consulter');label.htmlFor='variantPicker';const select=el('select');select.id='variantPicker';
-  for(const v of variants){const text=`ID ${v.id} · ${CATEGORY[v.category]||'Catégorie inconnue'} · ${heroName(v.hero_id)}${v.shop_cost==null?'':' · coût '+v.shop_cost}${view==='deck'?' · ×'+v.count:''}`;const op=el('option',text);op.value=String(v.id);select.append(op);}
+  for(const v of variants){const level=levelInfo(v);const text=`ID ${v.id}${level?' · '+level.stars+' ★':''} · ${CATEGORY[v.category]||'Catégorie inconnue'} · ${heroName(v.hero_id)}${v.shop_cost==null?'':' · coût '+v.shop_cost}${view==='deck'?' · ×'+v.count:''}`;const op=el('option',text);op.value=String(v.id);select.append(op);}
   const selected=variants.find(v=>v.id===row.id)||variants[0];select.value=String(selected.id);const content=el('div');content.append(variantBody(selected));select.addEventListener('change',()=>content.replaceChildren(variantBody(variants.find(v=>String(v.id)===select.value))));field.append(label,select);
   const note=el('p','Même nom anglais : une seule vignette. Chaque identifiant conserve sa propre fiche, ses effets et ses données. Les filtres sélectionnent les groupes, sans masquer leurs autres identifiants.','infobox');openDialog(displayName(row),[list,field,content,note]);
  }else openDialog(displayName(row),[variantBody(row)]);
@@ -134,13 +140,13 @@ function showDetails(row){
 async function copyText(text){try{if(!navigator.clipboard)throw new Error();await navigator.clipboard.writeText(text);toast('Identifiant copié');}catch{const inp=el('input');inp.value=text;inp.readOnly=true;$('dialogBody').append(inp);inp.focus();inp.select();toast('Sélectionnez puis copiez l’identifiant affiché.');}}
 function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,4000);}
 function exportCsv(){
- const exportRows=(view==='cards'||view==='deck')?filtered.flatMap(variantsOf):filtered;const cols=view==='cards'?['id','name_en','name_zh','name_tc','hero_id','hero_name_en','category','shop_cost','available_in_apk','hidden_in_apk']:view==='deck'?['id','name_en','hero_id','count','appearance','catalog_match']:['id','name_en','name_zh','card_id','resource_name'];
+ const exportRows=((view==='cards'||view==='deck')?filtered.flatMap(variantsOf):filtered).map(v=>({...v,stars:levelInfo(v)?.stars,level_family:levelInfo(v)?.family}));const cols=view==='cards'?['id','name_en','stars','level_family','name_zh','name_tc','hero_id','hero_name_en','category','shop_cost','available_in_apk','hidden_in_apk']:view==='deck'?['id','name_en','stars','level_family','hero_id','count','appearance','catalog_match']:['id','name_en','name_zh','card_id','resource_name'];
  const cell=v=>{let s=String(v??'');if(/^[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};const csv='\uFEFF'+[cols.map(cell).join(';'),...exportRows.map(r=>cols.map(k=>cell(r[k])).join(';'))].join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=el('a');a.href=url;a.download=`marvel-duel-${view}.csv`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast(`${nf.format(exportRows.length)} identifiants exportés`);
 }
 for(const h of DATA.heroes){const option=el('option',`${h.name_en||'Héros'} · ${h.id}`);option.value=String(h.id);$('hero').append(option);}
 $('cardStat').textContent=nf.format(groupRows(DATA.cards).length);$('heroStat').textContent=DATA.heroes.length;
 $('search').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>{page=1;apply();},140);});
-for(const id of ['category','hero','language','sort','available'])$(id).addEventListener('change',()=>{page=1;apply();});
+for(const id of ['category','hero','stars','language','sort','available'])$(id).addEventListener('change',()=>{page=1;apply();});
 $('reset').addEventListener('click',()=>{$('sort').value='name';$('language').value='en';changeView(view);});
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>changeView(b.dataset.view)));
 $('prev').addEventListener('click',()=>{page--;render();$('resultCount').scrollIntoView({block:'start'});});$('next').addEventListener('click',()=>{page++;render();$('resultCount').scrollIntoView({block:'start'});});
